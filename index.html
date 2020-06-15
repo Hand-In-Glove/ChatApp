@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ChinWag</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        font: 13px Helvetica, Arial;
+      }
+      form {
+        background: #000;
+        padding: 3px;
+        position: fixed;
+        bottom: 0;
+        width: 100%;
+      }
+      form input {
+        border: 0;
+        padding: 10px;
+        width: 90%;
+        margin-right: 0.5%;
+      }
+      form button {
+        width: 9%;
+        background: rgb(130, 224, 255);
+        border: none;
+        padding: 10px;
+      }
+      .flexContainer {
+        display: flex;
+      }
+      #userName {
+        background: #000;
+        padding: 3px;
+        position: fixed;
+        bottom: 42px;
+        width: 100%;
+      }
+      label {
+        color: whitesmoke;
+      }
+      #feedback,
+      #population {
+        padding: 3px;
+        position: fixed;
+        top: 0px;
+        width: 100%;
+        height: 25px;
+      }
+      #messages {
+        list-style-type: none;
+        margin: 0;
+        margin-top: 25px;
+        padding: 0;
+      }
+      #messages li {
+        padding: 5px 10px;
+      }
+      #messages li:nth-child(odd) {
+        background: #eee;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="flexContainer">
+      <div id="feedback"></div>
+      <div id="population"></div>
+    </div>
+    <ul id="messages"></ul>
+    <form id="userName">
+      <label>Username: </label>
+      <input id="user" type="text" value="Anonymous" />
+    </form>
+    <form id="msgForm" action="">
+      <input id="m" autocomplete="off" /><button type="submit">Send</button>
+    </form>
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+      const socket = io();
+      let form = document.querySelector("#msgForm");
+      let m = document.querySelector("#m");
+      let messages = document.querySelector("#messages");
+      let user = document.querySelector("#user");
+      let feedback = document.querySelector("#feedback");
+      let population = document.querySelector("#population");
+      //listen for user typing and send to back end
+      m.addEventListener("keypress", () => {
+        if (m.value == "") {
+          socket.emit("typing", ``);
+        } else {
+          socket.emit("typing", `${user.value} is typing...`);
+        }
+      });
+      //send chat message to all users
+      form.addEventListener("submit", function(e) {
+        e.preventDefault(); // prevents page reloading
+        socket.emit("chat message", { message: m.value, user: user.value });
+        m.value = "";
+        feedback.innerHTML = "";
+      });
+      //when a chat message is received create an li and display
+      socket.on("chat message", function(msg) {
+        let li = document.createElement("li");
+        li.innerHTML = `<strong>${msg.user}</strong>: ${msg.message}`;
+        messages.appendChild(li);
+        feedback.innerHTML = "";
+      });
+      socket.on("typing", function(typing) {
+        feedback.innerHTML = `<p>${typing}</p>`;
+      });
+      m.value == "" && (feedback.innerHTML = "");
+      //listen for a new user connecting and display a timed message to show new connection - doesn't work
+      socket.on("new client", function(data) {
+        console.log(data);
+        population.innerHTML = `<p>${data}</p>`;
+        setTimeout(() => {
+          population.innerHTML = "";
+        }, 1000);
+      });
+    </script>
+  </body>
+</html>
